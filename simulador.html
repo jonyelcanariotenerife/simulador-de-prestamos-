@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Préstamos y Amortización Avanzado</title>
+
+  <!-- PWA: instalable en Android/iOS como app independiente -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="background-color" content="#0b0e14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SimulaPréstamos">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+  <!-- Chart.js CDN para gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome para iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #0b0e14;
+      --card-bg: #151926;
+      --card-border: #232a3e;
+      --input-bg: #0f131f;
+      --accent-green: #00e676;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --accent-orange: #f97316;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+      padding: 20px 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #fff;
+    }
+
+    header h1 i {
+      color: var(--accent-purple);
+    }
+
+    .badge {
+      background: rgba(139, 92, 246, 0.2);
+      color: var(--accent-purple);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      border: 1px solid rgba(139, 92, 246, 0.4);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 900px) {
+      .grid-2 {
+        grid-template-columns: 420px 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-main);
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 10px;
+    }
+
+    .card-title i {
+      color: var(--accent-green);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    input, select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
+
+    .unit {
+      position: absolute;
+      right: 12px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--accent-green);
+      color: #000;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn-primary:hover {
+      background: #00c865;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+    }
+
+    /* Tabla de inyecciones extra */
+    .injection-list {
+      margin-top: 12px;
+      max-height: 160px;
+      overflow-y: auto;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: var(--input-bg);
+    }
+
+    .injection-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--card-border);
+      font-size: 0.85rem;
+    }
+
+    .injection-item:last-child {
+      border-bottom: none;
+    }
+
+    .btn-delete {
+      color: #ef4444;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* Tarjetas comparativas */
+    .comparison-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .comp-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .comp-card.original {
+      border-top: 4px solid var(--text-muted);
+    }
+
+    .comp-card.quota {
+      border-top: 4px solid var(--accent-blue);
+    }
+
+    .comp-card.term {
+      border-top: 4px solid var(--accent-purple);
+    }
+
+    .comp-card .tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .comp-card .main-val {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .comp-card .sub-val {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .comp-card .savings {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent-green);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--card-border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Chart section */
+    .chart-container {
+      position: relative;
+      height: 280px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    /* Tabs de desglose */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-green);
+      border-bottom-color: var(--accent-green);
+    }
+
+    .table-wrapper {
+      max-height: 320px;
+      overflow-y: auto;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+
+    th {
+      background: #111522;
+      color: var(--text-muted);
+      padding: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    /* Modal Calculadora Inversa */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .calc-result {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid var(--accent-blue);
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    .calc-result strong {
+      color: var(--accent-blue);
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <!-- Header -->
+  <header>
+    <h1><i class="fa-solid fa-flask-vial"></i> Simulador de Préstamos Pro</h1>
+    <span class="badge">Soporta Amortización & Comparativa</span>
+  </header>
+
+  <!-- Grid Principal -->
+  <div class="grid-2">
+    
+    <!-- Columna Izquierda: Parámetros del Préstamo -->
+    <div class="card">
+      <div class="card-title">
+        <i class="fa-solid fa-sliders"></i> Datos de tu Préstamo
+      </div>
+
+      <div class="form-group">
+        <label>Deuda Pendiente Actual (€)</label>
+        <div class="input-wrapper">
+          <input type="number" id="deudaInicial" value="2580" step="0.01">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cuota Actual (€)</label>
+          <div class="input-wrapper">
+            <input type="number" id="cuotaActual" value="144.55" step="0.01">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>TIN Anual (%)</label>
+          <div class="input-wrapper">
+            <input type="number" id="tinAnual" value="6.6" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Meses Restantes</label>
+          <div class="input-wrapper">
+            <input type="number" id="mesesRestantes" value="19" step="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Comisión Extra (€)</label>
+          <div class="input-wrapper">
+            <input type="number" id="comision" value="0.50" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-secondary btn-sm" style="width:100%; margin-bottom: 16px;" onclick="abrirModalCalc()">
+        <i class="fa-solid fa-calculator"></i> ¿No sabes el TIN o los meses?
+      </button>
+
+      <!-- Subsección Inyecciones -->
+      <div class="card-title" style="margin-top: 10px;">
+        <i class="fa-solid fa-money-bill-trend-up"></i> Inyecciones Extras
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>En el Mes Nº</label>
+          <input type="number" id="extraMes" value="1" min="1" step="1">
+        </div>
+        <div class="form-group">
+          <label>Importe Extra (€)</label>
+          <input type="number" id="extraMonto" value="100" step="10">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Frecuencia de Inyección</label>
+        <select id="extraFrecuencia">
+          <option value="PUNTUAL">Puntual (Sólo ese mes)</option>
+          <option value="RECURRENTE">Recurrente (Cada N meses)</option>
+        </select>
+      </div>
+
+      <button class="btn btn-secondary btn-sm" style="width:100%;" onclick="agregarInyeccion()">
+        <i class="fa-solid fa-plus"></i> Añadir Amortización Extra
+      </button>
+
+      <!-- Lista de inyecciones agregadas -->
+      <div class="injection-list" id="listaInyecciones">
+        <!-- Generado dinámicamente -->
+      </div>
+
+      <button class="btn btn-primary" onclick="ejecutarSimulacion()">
+        <i class="fa-solid fa-bolt"></i> Simular Todo
+      </button>
+    </div>
+
+    <!-- Columna Derecha: Resultados y Comparativa -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Resumen Dual Comparativo -->
+      <div class="card">
+        <div class="card-title">
+          <i class="fa-solid fa-scale-balanced"></i> Comparativa en Tiempo Real
+        </div>
+
+        <div class="comparison-cards">
+          
+          <!-- Opción 0: Sin Amortizar -->
+          <div class="comp-card original">
+            <div class="tag">Sin Amortización</div>
+            <div class="main-val" id="origCuota">144.55 €/m</div>
+            <div class="sub-val" id="origIntereses">Intereses: 0 €</div>
+            <div class="sub-val" id="origTiempo">Plazo: 0 meses</div>
+            <div class="savings" style="color: var(--text-muted);">Base de cálculo</div>
+          </div>
+
+          <!-- Opción A: Reducir Cuota -->
+          <div class="comp-card quota">
+            <div class="tag" style="color: var(--accent-blue);">Reduciendo Cuota</div>
+            <div class="main-val" id="quotaNueva">138.89 €/m</div>
+            <div class="sub-val" id="quotaIntereses">Intereses: 0 €</div>
+            <div class="sub-val" id="quotaTiempo">Mantiene plazo</div>
+            <div class="savings" id="quotaAhorro">
+              <i class="fa-solid fa-piggy-bank"></i> Ahorro: 0 €
+            </div>
+          </div>
+
+          <!-- Opción B: Reducir Plazo -->
+          <div class="comp-card term">
+            <div class="tag" style="color: var(--accent-purple);">Reduciendo Plazo</div>
+            <div class="main-val" id="termNuevoTiempo">18 meses</div>
+            <div class="sub-val" id="termCuota">Cuota: 144.55 €/m</div>
+            <div class="sub-val" id="termIntereses">Intereses: 0 €</div>
+            <div class="savings" id="termAhorro">
+              <i class="fa-solid fa-piggy-bank"></i> Ahorro: 0 €
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Gráfico de Deuda -->
+      <div class="card">
+        <div class="card-title">
+          <i class="fa-solid fa-chart-line"></i> Evolución de la Deuda
+        </div>
+        <div class="chart-container">
+          <canvas id="chartDeuda"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Tabla Desglose Mes a Mes -->
+  <div class="card">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="cambiarTab('tablaCuota', this)">Desglose: Reduciendo Cuota</button>
+      <button class="tab-btn" onclick="cambiarTab('tablaPlazo', this)">Desglose: Reduciendo Plazo</button>
+    </div>
+
+    <!-- Tabla Cuota -->
+    <div id="tablaCuota" class="tab-content">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Interés</th>
+              <th>Capital Regular</th>
+              <th>Inyección Extra</th>
+              <th>Cuota Total</th>
+              <th>Deuda Restante</th>
+            </tr>
+          </thead>
+          <tbody id="bodyCuota"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tabla Plazo -->
+    <div id="tablaPlazo" class="tab-content" style="display:none;">
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Mes</th>
+              <th>Interés</th>
+              <th>Capital Regular</th>
+              <th>Inyección Extra</th>
+              <th>Cuota Total</th>
+              <th>Deuda Restante</th>
+            </tr>
+          </thead>
+          <tbody id="bodyPlazo"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Calculadora Inversa -->
+<div class="modal" id="modalCalc">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.1rem;"><i class="fa-solid fa-calculator" style="color: var(--accent-blue);"></i> Calculadora Inversa</h3>
+      <button class="modal-close" onclick="cerrarModalCalc()">&times;</button>
+    </div>
+    <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:12px;">
+      Si conoces tu Deuda actual y tu Cuota, puedes calcular el TIN o los meses de plazo restantes exactos.
+    </p>
+
+    <div class="form-group">
+      <label>Deuda Pendiente (€)</label>
+      <input type="number" id="calcDeuda" value="2580">
+    </div>
+    <div class="form-group">
+      <label>Cuota Mensual (€)</label>
+      <input type="number" id="calcCuota" value="144.55">
+    </div>
+    
+    <div class="form-row">
+      <div class="form-group">
+        <label>Opcion A: Si sabes Meses</label>
+        <input type="number" id="calcMeses" placeholder="Ej: 19">
+      </div>
+      <div class="form-group">
+        <label>Opción B: Si sabes TIN (%)</label>
+        <input type="number" id="calcTin" placeholder="Ej: 6.6">
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-sm" onclick="resolverInversa()">Calcular Parámetro Faltante</button>
+
+    <div class="calc-result" id="calcResultado" style="display:none;">
+      <!-- Resultado aquí -->
+    </div>
+  </div>
+</div>
+
+<script>
+  // Estado Global
+  let inyecciones = [
+    { mes: 1, monto: 100, frecuencia: 'PUNTUAL' }
+  ];
+
+  let chartInstance = null;
+
+  // Precarga de datos recibidos por parámetros de URL (integración con El Hilván)
+  function aplicarParametrosURL() {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('deuda') && !params.has('cuota')) return;
+
+    const setVal = (id, key, isInt = false) => {
+      if (params.has(key)) {
+        const raw = params.get(key);
+        const num = isInt ? parseInt(raw) : parseFloat(raw);
+        if (!isNaN(num)) document.getElementById(id).value = num;
+      }
+    };
+
+    setVal('deudaInicial', 'deuda');
+    setVal('cuotaActual', 'cuota');
+    setVal('tinAnual', 'tin');
+    setVal('mesesRestantes', 'meses', true);
+    setVal('comision', 'comision');
+
+    // Al venir de un préstamo real, empezamos sin inyecciones de ejemplo
+    inyecciones = [];
+  }
+
+  // Inicialización
+  document.addEventListener("DOMContentLoaded", () => {
+    aplicarParametrosURL();
+    renderInyecciones();
+    ejecutarSimulacion();
+  });
+
+  // Renderizar Lista de Inyecciones
+  function renderInyecciones() {
+    const listContainer = document.getElementById('listaInyecciones');
+    listContainer.innerHTML = '';
+
+    if (inyecciones.length === 0) {
+      listContainer.innerHTML = '<div style="padding:10px; font-size:0.8rem; color:var(--text-muted); text-align:center;">No hay inyecciones extras agregadas.</div>';
+      return;
+    }
+
+    inyecciones.forEach((inj, idx) => {
+      const item = document.createElement('div');
+      item.className = 'injection-item';
+      item.innerHTML = `
+        <div>
+          <strong>${inj.monto.toFixed(2)} €</strong> 
+          <span style="color:var(--text-muted);">
+            (${inj.frecuencia === 'PUNTUAL' ? `Mes ${inj.mes}` : `Cada ${inj.mes} meses`})
+          </span>
+        </div>
+        <button class="btn-delete" onclick="eliminarInyeccion(${idx})">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      `;
+      listContainer.appendChild(item);
+    });
+  }
+
+  function agregarInyeccion() {
+    const mes = parseInt(document.getElementById('extraMes').value) || 1;
+    const monto = parseFloat(document.getElementById('extraMonto').value) || 0;
+    const frecuencia = document.getElementById('extraFrecuencia').value;
+
+    if (monto <= 0) return;
+
+    inyecciones.push({ mes, monto, frecuencia });
+    renderInyecciones();
+    ejecutarSimulacion();
+  }
+
+  function eliminarInyeccion(index) {
+    inyecciones.splice(index, 1);
+    renderInyecciones();
+    ejecutarSimulacion();
+  }
+
+  // Motor principal de Simulación
+  function ejecutarSimulacion() {
+    const deudaInicial = parseFloat(document.getElementById('deudaInicial').value) || 0;
+    const cuotaActual = parseFloat(document.getElementById('cuotaActual').value) || 0;
+    const tinAnual = parseFloat(document.getElementById('tinAnual').value) || 0;
+    let mesesRestantes = parseInt(document.getElementById('mesesRestantes').value) || 0;
+    const comision = parseFloat(document.getElementById('comision').value) || 0;
+
+    const i = (tinAnual / 100) / 12; // Interés mensual en decimal
+
+    if (deudaInicial <= 0 || cuotaActual <= 0) return;
+
+    // Si los meses no están ajustados, autocalcular con la fórmula amortización básica
+    if (mesesRestantes <= 0 && i > 0) {
+      mesesRestantes = Math.round(-Math.log(1 - (deudaInicial * i) / cuotaActual) / Math.log(1 + i));
+      document.getElementById('mesesRestantes').value = mesesRestantes;
+    }
+
+    // 1. Simulación BASE (Sin Amortización)
+    const simBase = simularPréstamo({
+      deudaInicial, cuotaInicial: cuotaActual, i, mesesMax: mesesRestantes, comision,
+      modo: 'BASE', inyeccionesList: []
+    });
+
+    // 2. Simulación REDUCIENDO CUOTA
+    const simCuota = simularPréstamo({
+      deudaInicial, cuotaInicial: cuotaActual, i, mesesMax: mesesRestantes, comision,
+      modo: 'REDUCIR_CUOTA', inyeccionesList: inyecciones
+    });
+
+    // 3. Simulación REDUCIENDO PLAZO
+    const simPlazo = simularPréstamo({
+      deudaInicial, cuotaInicial: cuotaActual, i, mesesMax: mesesRestantes, comision,
+      modo: 'REDUCIR_PLAZO', inyeccionesList: inyecciones
+    });
+
+    // Actualizar UI
+    actualizarTarjetasResumen(simBase, simCuota, simPlazo);
+    renderizarGrafico(simBase.serieDeuda, simCuota.serieDeuda, simPlazo.serieDeuda);
+    renderizarTabla('bodyCuota', simCuota.desglose);
+    renderizarTabla('bodyPlazo', simPlazo.desglose);
+  }
+
+  // Algoritmo de cálculo mes a mes
+  function simularPréstamo({ deudaInicial, cuotaInicial, i, mesesMax, comision, modo, inyeccionesList }) {
+    let deuda = deudaInicial;
+    let cuota = cuotaInicial;
+    let totalIntereses = 0;
+    let totalPagado = 0;
+    let desglose = [];
+    let serieDeuda = [deudaInicial];
+
+    let mes = 1;
+    let limiteMeses = modo === 'REDUCIR_PLAZO' || modo === 'BASE' ? 600 : mesesMax;
+
+    while (deuda > 0.01 && mes <= limiteMeses) {
+      const interesMes = deuda * i;
+      let capitalMes = cuota - interesMes;
+
+      if (capitalMes > deuda) {
+        capitalMes = deuda;
+        cuota = capitalMes + interesMes;
+      }
+
+      deuda -= capitalMes;
+
+      // Calcular inyección extra para este mes
+      let extraInyectado = 0;
+      inyeccionesList.forEach(inj => {
+        if (inj.frecuencia === 'PUNTUAL' && inj.mes === mes) {
+          extraInyectado += inj.monto;
+        } else if (inj.frecuencia === 'RECURRENTE' && mes >= inj.mes && (mes - inj.mes) % inj.mes === 0) {
+          extraInyectado += inj.monto;
+        }
+      });
+
+      let extraNeto = 0;
+      if (extraInyectado > 0 && deuda > 0) {
+        extraNeto = Math.max(0, extraInyectado - comision);
+        if (extraNeto > deuda) extraNeto = deuda;
+        deuda -= extraNeto;
+
+        // Recalcular cuota si es modo REDUCIR_CUOTA
+        if (modo === 'REDUCIR_CUOTA' && deuda > 0) {
+          let mesesQuedan = mesesMax - mes;
+          if (mesesQuedan > 0) {
+            cuota = (deuda * i) / (1 - Math.pow(1 + i, -mesesQuedan));
+          }
+        }
+      }
+
+      totalIntereses += interesMes;
+      totalPagado += (capitalMes + interesMes + extraNeto);
+
+      desglose.push({
+        mes,
+        interes: interesMes,
+        capital: capitalMes,
+        extra: extraNeto,
+        cuotaTotal: capitalMes + interesMes + extraNeto,
+        deudaRestante: Math.max(0, deuda)
+      });
+
+      serieDeuda.push(Math.max(0, deuda));
+
+      if (deuda <= 0) break;
+      mes++;
+    }
+
+    return {
+      totalIntereses,
+      totalPagado,
+      mesesTotales: desglose.length,
+      cuotaFinal: cuota,
+      desglose,
+      serieDeuda
+    };
+  }
+
+  // Actualizar Tarjetas de Resumen Comparativo
+  function actualizarTarjetasResumen(base, cuota, plazo) {
+    // Base
+    document.getElementById('origCuota').innerText = `${cuotaActual.value} €/m`;
+    document.getElementById('origIntereses').innerText = `Intereses: ${base.totalIntereses.toFixed(2)} €`;
+    document.getElementById('origTiempo').innerText = `Plazo: ${base.mesesTotales} meses`;
+
+    // Reduciendo Cuota
+    document.getElementById('quotaNueva').innerText = `${cuota.cuotaFinal.toFixed(2)} €/m`;
+    document.getElementById('quotaIntereses').innerText = `Intereses: ${cuota.totalIntereses.toFixed(2)} €`;
+    document.getElementById('quotaTiempo').innerText = `Plazo: ${cuota.mesesTotales} meses`;
+    const ahorroCuota = base.totalIntereses - cuota.totalIntereses;
+    document.getElementById('quotaAhorro').innerHTML = `<i class="fa-solid fa-piggy-bank"></i> Ahorro: ${ahorroCuota.toFixed(2)} €`;
+
+    // Reduciendo Plazo
+    document.getElementById('termNuevoTiempo').innerText = `${plazo.mesesTotales} meses`;
+    document.getElementById('termCuota').innerText = `Cuota fija: ${plazo.cuotaFinal.toFixed(2)} €/m`;
+    document.getElementById('termIntereses').innerText = `Intereses: ${plazo.totalIntereses.toFixed(2)} €`;
+    const ahorroPlazo = base.totalIntereses - plazo.totalIntereses;
+    const mesesAhorrados = base.mesesTotales - plazo.mesesTotales;
+    document.getElementById('termAhorro').innerHTML = `<i class="fa-solid fa-piggy-bank"></i> Ahorro: ${ahorroPlazo.toFixed(2)} € (${mesesAhorrados} m menos)`;
+  }
+
+  // Renderizar Tablas
+  function renderizarTabla(elementId, desglose) {
+    const tbody = document.getElementById(elementId);
+    tbody.innerHTML = '';
+
+    desglose.forEach(row => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><b>Mes ${row.mes}</b></td>
+        <td>${row.interes.toFixed(2)} €</td>
+        <td>${row.capital.toFixed(2)} €</td>
+        <td style="color:${row.extra > 0 ? 'var(--accent-green)' : 'inherit'}; font-weight:${row.extra > 0 ? 'bold' : 'normal'}">
+          ${row.extra > 0 ? `+${row.extra.toFixed(2)} €` : '-'}
+        </td>
+        <td><b>${row.cuotaTotal.toFixed(2)} €</b></td>
+        <td>${row.deudaRestante.toFixed(2)} €</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // Gráficos con Chart.js
+  function renderizarGrafico(dBase, dCuota, dPlazo) {
+    const ctx = document.getElementById('chartDeuda').getContext('2d');
+    const maxLen = Math.max(dBase.length, dCuota.length, dPlazo.length);
+    const labels = Array.from({ length: maxLen }, (_, k) => `Mes ${k}`);
+
+    if (chartInstance) {
+      chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Sin Amortizar',
+            data: dBase,
+            borderColor: '#9ca3af',
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.1
+          },
+          {
+            label: 'Reduciendo Cuota',
+            data: dCuota,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.1
+          },
+          {
+            label: 'Reduciendo Plazo',
+            data: dPlazo,
+            borderColor: '#8b5cf6',
+            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+            fill: true,
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: '#f3f4f6' }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#9ca3af' }
+          },
+          y: {
+            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+            ticks: { color: '#9ca3af' }
+          }
+        }
+      }
+    });
+  }
+
+  // Tabs
+  function cambiarTab(tabId, btn) {
+    document.querySelectorAll('.tab-content').forEach(tc => tc.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(tb => tb.classList.remove('active'));
+    document.getElementById(tabId).style.display = 'block';
+    btn.classList.add('active');
+  }
+
+  // Modal Calculadora Inversa
+  function abrirModalCalc() {
+    document.getElementById('modalCalc').classList.add('active');
+  }
+
+  function cerrarModalCalc() {
+    document.getElementById('modalCalc').classList.remove('active');
+  }
+
+  function resolverInversa() {
+    const D = parseFloat(document.getElementById('calcDeuda').value) || 0;
+    const C = parseFloat(document.getElementById('calcCuota').value) || 0;
+    const mInput = parseInt(document.getElementById('calcMeses').value) || 0;
+    const tinInput = parseFloat(document.getElementById('calcTin').value) || 0;
+
+    const resDiv = document.getElementById('calcResultado');
+    resDiv.style.display = 'block';
+
+    if (mInput > 0) {
+      // Resolver TIN mediante método numérico de Bisección
+      let low = 0.0001, high = 1.0; // 0.01% a 100% mensual
+      let i = 0;
+      for (let iter = 0; iter < 40; iter++) {
+        i = (low + high) / 2;
+        let cCalc = (D * i) / (1 - Math.pow(1 + i, -mInput));
+        if (cCalc > C) high = i;
+        else low = i;
+      }
+      let tinCalculado = i * 12 * 100;
+      resDiv.innerHTML = `TIN Anual estimado: <strong>${tinCalculado.toFixed(2)} %</strong>`;
+      document.getElementById('tinAnual').value = tinCalculado.toFixed(2);
+      document.getElementById('mesesRestantes').value = mInput;
+    } else if (tinInput > 0) {
+      let i = (tinInput / 100) / 12;
+      let mCalculado = Math.round(-Math.log(1 - (D * i) / C) / Math.log(1 + i));
+      resDiv.innerHTML = `Meses restantes estimados: <strong>${mCalculado} meses</strong>`;
+      document.getElementById('mesesRestantes').value = mCalculado;
+      document.getElementById('tinAnual').value = tinInput;
+    } else {
+      resDiv.innerHTML = `<span style="color:#ef4444;">Introduce los Meses O el TIN para calcular la otra variable.</span>`;
+    }
+  }
+</script>
+<script>
+  // Registro del Service Worker (permite instalar la app y usarla sin conexión)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch((err) => {
+        console.warn('No se pudo registrar el Service Worker:', err);
+      });
+    });
+  }
+</script>
+</body>
+</html>
